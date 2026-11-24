@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VeriPath — Credential Recognition &amp; Skills Validation for Skilled Refugees</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Top Navigation -->
+  <header class="navbar">
+    <div class="container nav-inner">
+      <a href="#hero" class="brand">
+        <div class="brand-logo" aria-hidden="true">VP</div>
+        <div>
+          <span class="brand-name">VeriPath</span>
+          <span class="brand-tag">Track 1 · Credential &amp; Skills Validation</span>
+        </div>
+      </a>
+
+      <nav class="nav-links" aria-label="Main Navigation">
+        <a href="#passport-builder">1. Skills Passport</a>
+        <a href="#assessment-hub">2. Validation &amp; Grants</a>
+        <a href="#employer-portal">3. Employer Portal</a>
+        <a href="#impact-framework">4. SDG &amp; Hackathon Rubric</a>
+      </nav>
+
+      <div class="nav-actions">
+        <span class="pill pill-sdg">UN SDGs 4 &amp; 8</span>
+        <a href="#passport-builder" class="btn btn-primary btn-sm">Launch Passport</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero Section -->
+    <section id="hero" class="hero">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow">
+            <span class="dot"></span>
+            Mini-Hackathon Build · Track 1: Credential Recognition &amp; Skills Validation
+          </div>
+          <h1>End "Brain Waste." Verify Real-World Refugee Expertise.</h1>
+          <p class="hero-lead">
+            Millions of displaced doctors, engineers, analysts, and educators are locked out of career-level work due to missing paper diplomas or unrecognized foreign degrees. <strong>VeriPath</strong> pairs practical competency testing, tamper-evident digital skill passports, and micro-grant bridging stipends to turn sidelined potential into verified hires.
+          </p>
+
+          <div class="hero-cta">
+            <a href="#passport-builder" class="btn btn-primary">Create Digital Skills Passport</a>
+            <a href="#employer-portal" class="btn btn-outline">Verify Candidate ID</a>
+          </div>
+
+          <div class="sdg-strip">
+            <div class="sdg-card">
+              <div class="sdg-badge sdg-4">SDG 4</div>
+              <div>
+                <strong>Quality Education &amp; Upskilling</strong>
+                <span>Funded micro-credentials &amp; exam fee waivers when paper records are inaccessible.</span>
+              </div>
+            </div>
+            <div class="sdg-card">
+              <div class="sdg-badge sdg-8">SDG 8</div>
+              <div>
+                <strong>Decent Work &amp; Economic Growth</strong>
+                <span>Competency-first hiring pathways that replace underemployment with fair roles.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="hero-panel" aria-label="Live Platform Metrics">
+          <div class="panel-header">
+            <span class="panel-title">Live Track 1 Pilot Telemetry</span>
+            <span class="status-live">● Active Cohort</span>
+          </div>
+          <div class="metrics-grid">
+            <div class="metric-box">
+              <span class="metric-value" id="metric-passports">1,428</span>
+              <span class="metric-label">Verified Skill Passports</span>
+            </div>
+            <div class="metric-box">
+              <span class="metric-value">78%</span>
+              <span class="metric-label">Missing-Record Cases Resolved</span>
+            </div>
+            <div class="metric-box">
+              <span class="metric-value">$42,500</span>
+              <span class="metric-label">Bridging Stipends Disbursed</span>
+            </div>
+            <div class="metric-box">
+              <span class="metric-value">14 Days</span>
+              <span class="metric-label">Avg. Verification Turnaround</span>
+            </div>
+          </div>
+          <div class="panel-note">
+            <strong>Built for Repeatability:</strong> Standardizes foreign credential mapping across 18 countries and 6 high-demand sectors without manual caseworker bottlenecks.
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- Section 1: Interactive Credential & Skills Passport Builder -->
+    <section id="passport-builder" class="section">
+      <div class="container">
+        <div class="section-head">
+          <span class="section-kicker">Step 01 · Candidate Onboarding</span>
+          <h2>Digital Credential &amp; Skills Passport Builder</h2>
+          <p>
+            Document prior academic degrees, flag missing or damaged records, attach practical work proofs, and generate a verifiable credential hash for employers.
+          </p>
+        </div>
+
+        <div class="builder-layout">
+          <!-- Multi-Step Form -->
+          <div class="card form-card">
+            <div class="step-tabs" role="tablist">
+              <button type="button" class="step-tab active" data-step="1">1. Identity &amp; Origin</button>
+              <button type="button" class="step-tab" data-step="2">2. Foreign Degree &amp; Status</button>
+              <button type="button" class="step-tab" data-step="3">3. Practical Competency Proof</button>
+            </div>
+
+            <form id="passport-form" novalidate>
+              <!-- Step 1 -->
+              <div class="form-step active" data-step-panel="1">
+                <div class="field-group">
+                  <label for="cand-name">Full Professional Name</label>
+                  <input type="text" id="cand-name" value="Amina Hassan Farah" required />
+                </div>
+                <div class="field-row">
+                  <div class="field-group">
+                    <label for="cand-location">Current Host Location</label>
+                    <input type="text" id="cand-location" value="Garissa / Nairobi, Kenya" required />
+                  </div>
+                  <div class="field-group">
+                    <label for="cand-sector">Primary Professional Sector</label>
+                    <select id="cand-sector">
+                      <option value="Software & Cloud Engineering">Software &amp; Cloud Engineering</option>
+                      <option value="Clinical Healthcare & Nursing">Clinical Healthcare &amp; Nursing</option>
+                      <option value="Accounting, Audit & Finance">Accounting, Audit &amp; Finance</option>
+                      <option value="Civil & Energy Engineering">Civil &amp; Energy Engineering</option>
+                      <option value="Education & Curriculum Design">Education &amp; Curriculum Design</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="field-group">
+                  <label for="cand-role">Target Role Title</label>
+                  <input type="text" id="cand-role" value="Full-Stack Python & Database Developer" required />
+                </div>
+                <div class="step-actions">
+                  <span></span>
+                  <button type="button" class="btn btn-primary next-step" data-next="2">Continue to Credentials →</button>
+                </div>
+              </div>
+
+              <!-- Step 2 -->
+              <div class="form-step" data-step-panel="2">
+                <div class="field-row">
+                  <div class="field-group">
+                    <label for="cand-degree">Highest Foreign Qualification</label>
+                    <input type="text" id="cand-degree" value="B.Sc. in Computer Science (4-Year Honours)" required />
+                  </div>
+                  <div class="field-group">
+                    <label for="cand-institution">Issuing Institution &amp; Country</label>
+                    <input type="text" id="cand-institution" value="University of Khartoum, Sudan" required />
+                  </div>
+                </div>
+
+                <div class="field-group">
+                  <label for="cand-doc-status">Documentation &amp; Recognition Status</label>
+                  <select id="cand-doc-status">
+                    <option value="Missing / Left Behind During Displacement">Missing / Left Behind During Displacement (Alternative Proof Required)</option>
+                    <option value="Digital Scan Only (Unattested)">Digital Scan Only (Needs Equivalency &amp; Practical Audit)</option>
+                    <option value="Foreign Degree Unrecognized Locally">Foreign Degree Unrecognized Locally (Needs Bridging Exam)</option>
+                    <option value="Original Transcripts Available">Original Transcripts Available (Ready for Fast-Track)</option>
+                  </select>
+                </div>
+
+                <div class="field-group">
+                  <label for="cand-years">Verified Years of Prior Experience</label>
+                  <input type="number" id="cand-years" min="0" max="40" value="4" />
+                </div>
+
+                <div class="step-actions">
+                  <button type="button" class="btn btn-ghost prev-step" data-prev="1">← Back</button>
+                  <button type="button" class="btn btn-primary next-step" data-next="3">Continue to Skill Proofs →</button>
+                </div>
+              </div>
+
+              <!-- Step 3 -->
+              <div class="form-step" data-step-panel="3">
+                <div class="field-group">
+                  <label for="cand-skills">Core Technical &amp; Domain Skills (comma-separated)</label>
+                  <input type="text" id="cand-skills" value="Python, PostgreSQL, REST APIs, System Architecture, Automated Testing" />
+                </div>
+
+                <div class="field-group">
+                  <label for="cand-evidence">Portfolio / Case Audit / Practical Proof URL or Summary</label>
+                  <textarea id="cand-evidence" rows="3">GitHub production repo (github.com/aminahassan/logistics-api), former department lead attestation, and 94% score on live SQL/Python systems benchmark.</textarea>
+                </div>
+
+                <div class="checkbox-row">
+                  <input type="checkbox" id="cand-consent" checked />
+                  <label for="cand-consent">Publish anonymized &amp; verified credential record to the VeriPath Employer Directory.</label>
+                </div>
+
+                <div class="step-actions">
+                  <button type="button" class="btn btn-ghost prev-step" data-prev="2">← Back</button>
+                  <button type="submit" class="btn btn-success">Generate &amp; Publish Passport ✓</button>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <!-- Live Tamper-Evident Passport Preview -->
+          <div class="passport-preview-wrap">
+            <div class="passport-card" id="live-passport">
+              <div class="passport-top">
+                <div>
+                  <span class="passport-issuer">VERIPATH DIGITAL CREDENTIAL PASSPORT</span>
+                  <h3 id="prev-name">Amina Hassan Farah</h3>
+                  <p id="prev-role">Full-Stack Python &amp; Database Developer</p>
+                </div>
+                <div class="passport-seal" id="prev-seal">
+                  <span class="seal-status" id="prev-seal-text">PROVISIONAL</span>
+                  <span class="seal-id" id="prev-id">ID: VP-9042-KE</span>
+                </div>
+              </div>
+
+              <div class="passport-meta">
+                <div>
+                  <span class="meta-k">Host Location</span>
+                  <span class="meta-v" id="prev-location">Garissa / Nairobi, Kenya</span>
+                </div>
+                <div>
+                  <span class="meta-k">Sector &amp; Experience</span>
+                  <span class="meta-v" id="prev-sector-exp">Software &amp; Cloud Engineering · 4 Yrs</span>
+                </div>
+                <div>
+                  <span class="meta-k">Foreign Qualification</span>
+                  <span class="meta-v" id="prev-degree">B.Sc. in Computer Science (4-Year Honours) — University of Khartoum, Sudan</span>
+                </div>
+                <div>
+                  <span class="meta-k">Record Pathway</span>
+                  <span class="meta-v highlight-amber" id="prev-doc-status">Missing / Left Behind During Displacement</span>
+                </div>
+              </div>
+
+              <div class="passport-skills" id="prev-skills">
+                <span class="skill-chip">Python</span>
+                <span class="skill-chip">PostgreSQL</span>
+                <span class="skill-chip">REST APIs</span>
+                <span class="skill-chip">System Architecture</span>
+                <span class="skill-chip">Automated Testing</span>
+              </div>
+
+              <div class="passport-proof">
+                <strong>Practical Verification Evidence:</strong>
+                <p id="prev-evidence">GitHub production repo (github.com/aminahassan/logistics-api), former department lead attestation, and 94% score on live SQL/Python systems benchmark.</p>
+              </div>
+
+              <div class="passport-footer">
+                <span class="hash-code" id="prev-hash">SHA256: 8f94e2c1...7b30a9d4</span>
+                <span class="sdg-mini">Aligned: UN SDG 4.4 &amp; SDG 8.5</span>
+              </div>
+            </div>
+            <div id="publish-banner" class="toast-banner hidden" role="status"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 2: Competency Assessment & Bridging Stipend Simulator -->
+    <section id="assessment-hub" class="section section-alt">
+      <div class="container">
+        <div class="section-head">
+          <span class="section-kicker">Step 02 · Practical Validation &amp; Enablement</span>
+          <h2>Competency Assessment &amp; Bridging Micro-Grants</h2>
+          <p>
+            When paper certificates cannot be retrieved, candidates prove domain mastery via standardized scenario evaluations and unlock fee waivers for local licensing or bridging exams.
+          </p>
+        </div>
+
+        <div class="two-col-grid">
+          <!-- Interactive Scenario Evaluation -->
+          <div class="card">
+            <div class="card-header-flex">
+              <h3>Live Domain Competency Evaluation</h3>
+              <select id="quiz-domain" aria-label="Select Evaluation Domain">
+                <option value="tech">Software &amp; Data Engineering</option>
+                <option value="health">Clinical Triage &amp; Nursing</option>
+                <option value="finance">Financial Audit &amp; IFRS</option>
+              </select>
+            </div>
+            <p class="muted-text">
+              Score <strong>2/3 or higher</strong> to automatically upgrade your live Digital Passport above to <strong>VERIFIED COMPETENCY</strong> status.
+            </p>
+
+            <div id="quiz-container" class="quiz-box"></div>
+
+            <div class="quiz-footer">
+              <button type="button" id="submit-quiz-btn" class="btn btn-primary">Evaluate &amp; Issue Competency Badge</button>
+              <div id="quiz-result" class="quiz-result" aria-live="polite"></div>
+            </div>
+          </div>
+
+          <!-- Bridging & Re-Certification Micro-Grant Calculator -->
+          <div class="card">
+            <h3>Bridging &amp; Re-Certification Fee Waiver Matcher</h3>
+            <p class="muted-text">
+              Calculates targeted donor/partner stipend coverage for credential evaluation agencies, licensing exams, and connectivity kits.
+            </p>
+
+            <div class="grant-controls">
+              <div class="field-group">
+                <label for="grant-pathway">Required Recognition Pathway</label>
+                <select id="grant-pathway">
+                  <option value="equivalency">National Qualifications Authority Equivalency Audit ($120)</option>
+                  <option value="licensing">Professional Board Licensing / Bridging Exam ($280)</option>
+                  <option value="cloud_cert">Industry Cloud / Data Certification + Proctoring Voucher ($165)</option>
+                  <option value="portfolio_lab">Practical Capstone + Workstation/Connectivity Stipend ($210)</option>
+                </select>
+              </div>
+
+              <div class="field-group">
+                <label for="grant-need">Financial Barrier Level</label>
+                <select id="grant-need">
+                  <option value="1.0">100% Fee Waiver (Displaced / Zero-Income Household)</option>
+                  <option value="0.8">80% Co-Funded Stipend (Underemployed / Part-Time)</option>
+                  <option value="0.5">50% Employer-Sponsored Matching Grant</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grant-summary" id="grant-summary">
+              <div class="grant-row">
+                <span>Standard Assessment / Exam Cost</span>
+                <strong id="grant-total-cost">$120.00</strong>
+              </div>
+              <div class="grant-row">
+                <span>VeriPath Partner Stipend Coverage</span>
+                <strong class="text-green" id="grant-covered">$120.00 (100%)</strong>
+              </div>
+              <div class="grant-row total-row">
+                <span>Candidate Out-of-Pocket</span>
+                <strong id="grant-oop">$0.00</strong>
+              </div>
+              <p class="grant-note" id="grant-timeline">
+                Includes direct voucher payment to accrediting body + 14-day preparation mentor.
+              </p>
+              <button type="button" id="claim-voucher-btn" class="btn btn-outline btn-full">Reserve Fee-Waiver Voucher</button>
+              <div id="voucher-confirmation" class="voucher-msg hidden"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 3: Employer & Verifier Portal -->
+    <section id="employer-portal" class="section">
+      <div class="container">
+        <div class="section-head">
+          <span class="section-kicker">Step 03 · Hiring Partner &amp; Regulator Trust</span>
+          <h2>Employer &amp; Verifier Talent Directory</h2>
+          <p>
+            Hiring managers and accreditation officers can verify any VeriPath Credential ID in seconds, inspect practical work evidence, and initiate skills-first interviews.
+          </p>
+        </div>
+
+        <!-- Instant Credential ID Lookup Bar -->
+        <div class="verifier-bar card">
+          <div class="verifier-input-group">
+            <label for="lookup-id">Instant Credential ID Verification</label>
+            <div class="lookup-row">
+              <input type="text" id="lookup-id" placeholder="Try VP-8492-KE, VP-3104-JO, or your newly created ID..." />
+              <button type="button" id="verify-id-btn" class="btn btn-primary">Verify Credential</button>
+            </div>
+          </div>
+          <div id="lookup-result" class="lookup-result" aria-live="polite">
+            <span class="muted-text">Enter a VeriPath ID to audit cryptographic hash, skill scores, and degree equivalency notes.</span>
+          </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="directory-controls">
+          <div class="filter-pills" id="sector-filters">
+            <button type="button" class="filter-btn active" data-filter="ALL">All Verified Talent</button>
+            <button type="button" class="filter-btn" data-filter="Software & Cloud Engineering">Software &amp; Cloud</button>
+            <button type="button" class="filter-btn" data-filter="Clinical Healthcare & Nursing">Healthcare</button>
+            <button type="button" class="filter-btn" data-filter="Accounting, Audit & Finance">Finance &amp; Audit</button>
+            <button type="button" class="filter-btn" data-filter="Civil & Energy Engineering">Engineering</button>
+          </div>
+          <label class="toggle-verified">
+            <input type="checkbox" id="only-verified-toggle" />
+            <span>Show Competency-Verified Only</span>
+          </label>
+        </div>
+
+        <!-- Talent Cards Grid -->
+        <div class="talent-grid" id="talent-grid"></div>
+      </div>
+    </section>
+
+    <!-- Section 4: Evaluation Rubric & SDG Alignment -->
+    <section id="impact-framework" class="section section-alt">
+      <div class="container">
+        <div class="section-head">
+          <span class="section-kicker">Initiative Governance &amp; Hackathon Benchmarks</span>
+          <h2>Evaluation Criteria &amp; Scalable Blueprint</h2>
+          <p>
+            Designed specifically around the 5 initiative benchmarks to ensure repeatable, low-overhead adoption across cohorts and host regions.
+          </p>
+        </div>
+
+        <div class="rubric-grid">
+          <div class="rubric-card">
+            <span class="rubric-num">01</span>
+            <h3>Credential &amp; Skills Verification</h3>
+            <p>Combines foreign degree metadata with standardized scenario tests and portfolio audits so missing paper diplomas never disqualify proven experts.</p>
+          </div>
+          <div class="rubric-card">
+            <span class="rubric-num">02</span>
+            <h3>Access &amp; Compliance Readiness</h3>
+            <p>Exports employer-ready verification dossiers and direct voucher payments to accreditation bodies to eliminate upfront financial friction.</p>
+          </div>
+          <div class="rubric-card">
+            <span class="rubric-num">03</span>
+            <h3>Practical &amp; Market Fit</h3>
+            <p>Maps candidate competencies directly to high-demand local and remote job specs (software, clinical triage, IFRS accounting, civil infrastructure).</p>
+          </div>
+          <div class="rubric-card">
+            <span class="rubric-num">04</span>
+            <h3>Social &amp; SDG Impact</h3>
+            <p>Directly advances <strong>SDG 4.4</strong> (relevant technical/vocational skills) and <strong>SDG 8.5</strong> (full, productive, and decent work for all).</p>
+          </div>
+          <div class="rubric-card">
+            <span class="rubric-num">05</span>
+            <h3>Sustainability &amp; Scalability</h3>
+            <p>Self-serve passport onboarding + automated rubric scoring reduces manual caseworker review time by over 70% across new cohorts.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Candidate Audit / Interview Modal -->
+  <div id="candidate-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-backdrop" id="modal-close-bg"></div>
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <span class="passport-issuer" id="modal-id">VERIFIED DOSSIER · VP-8492-KE</span>
+          <h3 id="modal-title">Candidate Name</h3>
+        </div>
+        <button type="button" class="modal-close" id="modal-close-btn" aria-label="Close modal">✕</button>
+      </div>
+      <div id="modal-body" class="modal-body"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="modal-download-btn">Download Verification JSON</button>
+        <button type="button" class="btn btn-primary" id="modal-invite-btn">Request Paid Fellowship / Interview</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div>
+        <strong>VeriPath · Track 1: Credential Recognition &amp; Skills Validation</strong>
+        <p>Built for "Unlocking Displaced Talent: Pathways for Skilled Refugees" Mini-Hackathon (Nov 2026) · Advancing UN SDGs 4 &amp; 8.</p>
+      </div>
+      <div class="footer-links">
+        <a href="#passport-builder">Skills Passport</a>
+        <a href="#assessment-hub">Bridging Stipends</a>
+        <a href="#employer-portal">Verifier Portal</a>
+      </div>
+    </div>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html> 
