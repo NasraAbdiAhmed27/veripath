@@ -1,83 +1,117 @@
-const SUPABASE_URL = "https://guhsaixfkjrbobzgacff.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_MSNDe4CnVoQCFgLGScg10A_Ko6ESINH";
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-function headers() {
-  return {
-    "Content-Type": "application/json",
-    apikey: SUPABASE_ANON_KEY,
-    Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-    Prefer: "return=representation"
-  };
+// Replace with your exact Supabase Project URL and Publishable/Anon Key
+const SUPABASE_URL = "https://YOUR-PROJECT-REF.supabase.co";
+const SUPABASE_ANON_KEY = "YOUR-SUPABASE-PUBLISHABLE-KEY";
+
+const isConfigured =
+  SUPABASE_URL.startsWith("https://") &&
+  !SUPABASE_URL.includes("YOUR-PROJECT-REF") &&
+  SUPABASE_ANON_KEY.length > 20;
+
+export const supabase = isConfigured
+  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
+
+const LOCAL_PASSPORTS_KEY = "veripath_passports_v1";
+const LOCAL_REQUESTS_KEY = "veripath_requests_v1";
+
+function readLocal(key) {
+  try {
+    return JSON.parse(localStorage.getItem(key) || "[]");
+  } catch {
+    return [];
+  }
 }
 
-export async function fetchCandidatesFromDb() {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/candidates?order=created_at.desc`, {
-    headers: headers()
-  });
-  if (!res.ok) throw new Error("Failed to fetch candidates");
-  const rows = await res.json();
-  return rows.map((r) => ({
-    id: r.id,
-    name: r.name,
-    role: r.role,
-    location: r.location,
-    sector: r.sector,
-    years: r.years,
-    degree: r.degree,
-    docStatus: r.doc_status,
-    skills: r.skills || [],
-    evidence: r.evidence,
-    verified: r.verified,
-    score: r.score,
-    hash: r.hash
-  }));
+function writeLocal(key, rows) {
+  localStorage.setItem(key, JSON.stringify(rows));
 }
 
-export async function upsertCandidateToDb(cand) {
-  const payload = {
-    id: cand.id,
-    name: cand.name,
-    role: cand.role,
-    location: cand.location,
-    sector: cand.sector,
-    years: cand.years,
-    degree: cand.degree,
-    doc_status: cand.docStatus,
-    skills: cand.skills,
-    evidence: cand.evidence,
-    verified: cand.verified,
-    score: cand.score,
-    hash: cand.hash
-  };
-
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/candidates?on_conflict=id`, {
-    method: "POST",
-    headers: {
-      ...headers(),
-      Prefer: "resolution=merge-duplicates,return=representation"
-    },
-    body: JSON.stringify(payload)
-  });
-  if (!res.ok) throw new Error("Failed to save candidate");
-  return res.json();
+export async function checkConnection() {
+  if (!supabase) return { connected: false, mode: "Local Fallback" };
+  const { error } = await supabase.from("passports").select("id").limit(1);
+  if (error) {
+    console.warn("Supabase check warning:", error.message);
+    return { connected: false, mode: "Local Fallback" };
+  }
+  return { connected: true, mode: "Live PostgreSQL Connected" };
 }
 
-export async function saveVoucherToDb(voucher) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/vouchers`, {
-    method: "POST",
-    headers: headers(),
-    body: JSON.stringify(voucher)
-  });
-  if (!res.ok) throw new Error("Failed to save voucher");
-  return res.json();
+export async function fetchPassports() {
+  if (supabase) {
+    const { data, error } = await supabase
+      .from("passports")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (!error && data) {
+      writeLocal(LOCAL_PASSPORTS_KEY, data);
+      return data;
+    }
+  }
+  return readLocal(LOCAL_PASSPORTS_KEY);
 }
 
-export async function saveFellowshipRequestToDb(candidateId, notes = "Hackathon employer fellowship request") {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/fellowship_requests`, {
-    method: "POST",
-    headers: headers(),
-    body: JSON.stringify({ candidate_id: candidateId, notes })
-  });
-  if (!res.ok) throw new Error("Failed to save fellowship request");
-  return res.json();
+export async function createPassport(record) {
+  if (supabase) {
+    const { data, error } = await supabase
+      .from("passports")
+      .insert([record])
+      .select()
+      .single();
+    if (!error && data) return data;
+    if (error) console.error("Insert passport error:", error.message);
+  }
+  const fallback = { ...record, id: crypto.randomUUID(), created_at: new Date().toISOString() };
+  const existing = readLocal(LOCAL_PASSPORTS_KEY);
+  writeLocal(LOCAL_PASSPORTS_KEY, [fallback, ...existing]);
+  return fallback;
+}
+
+export async function updatePassport(id, patch) {
+  if (supabase) {
+    const { data, error } = await supabase
+      .from("passports")
+      .update(patch)
+      .eq("id", id)
+      .select()
+      .single();
+    if (!error && data) return data;
+    if (error) console.error("Update passport error:", error.message);
+  }
+  const updated = readLocal(LOCAL_PASSPORTS_KEY).map((p) =>
+    p.id === id ? { ...p, ...patch } : p
+  );
+  writeLocal(LOCAL_PASSPORTS_KEY, updated);
+  return updated.find((p) => p.id === id);
+}
+
+export async function fetchFellowshipRequests() {
+  if (supabase) {
+    const { data, error } = await supabase
+      .from("fellowship_requests")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (!error && data) {
+      writeLocal(LOCAL_REQUESTS_KEY, data);
+      return data;
+    }
+  }
+  return readLocal(LOCAL_REQUESTS_KEY);
+}
+
+export async function createFellowshipRequest(reqRecord) {
+  if (supabase) {
+    const { data, error } = await supabase
+      .from("fellowship_requests")
+      .insert([reqRecord])
+      .select()
+      .single();
+    if (!error && data) return data;
+    if (error) console.error("Insert request error:", error.message);
+  }
+  const fallback = { ...reqRecord, id: crypto.randomUUID(), created_at: new Date().toISOString() };
+  const existing = readLocal(LOCAL_REQUESTS_KEY);
+  writeLocal(LOCAL_REQUESTS_KEY, [fallback, ...existing]);
+  return fallback;
 } 
