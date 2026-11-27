@@ -1,8 +1,8 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
 // Replace with your live Supabase project URL and publishable / anon key
-const SUPABASE_URL = "https://YOUR-PROJECT-REF.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "YOUR-SUPABASE-PUBLISHABLE-OR-ANON-KEY";
+const SUPABASE_URL = "https://guhsaixfkjrbobzgacff.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_MSNDe4CnVoQCFgLGScg10A_Ko6ESINH";
 
 const hasValidConfig =
   SUPABASE_URL.startsWith("https://") &&
