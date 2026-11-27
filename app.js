@@ -1,373 +1,504 @@
 import {
-  checkConnection,
-  fetchPassports,
-  createPassport,
-  updatePassport,
-  fetchFellowshipRequests,
-  createFellowshipRequest,
+  pingServer,
+  listPassports,
+  insertPassport,
+  patchPassport,
+  listFellowshipRequests,
+  insertFellowshipRequest,
 } from "./backend.js";
 
 let passports = [];
-let requests = [];
-let activePassport = null;
+let fellowshipRequests = [];
+let selectedPassportId = null;
 
-// DOM references
-const dbStatusEl = document.getElementById("db-status");
-const btnBeneficiary = document.getElementById("btn-beneficiary-portal");
-const btnEmployer = document.getElementById("btn-employer-portal");
-const beneficiaryPortal = document.getElementById("beneficiary-portal");
-const employerPortal = document.getElementById("employer-portal");
+// Elements
+const statusChip = document.getElementById("server-status");
+const alertBanner = document.getElementById("global-alert");
+const tabBeneficiary = document.getElementById("tab-beneficiary");
+const tabEmployer = document.getElementById("tab-employer");
+const beneficiaryView = document.getElementById("beneficiary-view");
+const employerView = document.getElementById("employer-view");
+const activePassportSelect = document.getElementById("active-passport-select");
 
-// Portal Switcher
-function switchPortal(target) {
-  const isBeneficiary = target === "beneficiary";
-  btnBeneficiary.classList.toggle("active", isBeneficiary);
-  btnBeneficiary.setAttribute("aria-selected", String(isBeneficiary));
-  btnEmployer.classList.toggle("active", !isBeneficiary);
-  btnEmployer.setAttribute("aria-selected", String(!isBeneficiary));
-
-  beneficiaryPortal.classList.toggle("hidden", !isBeneficiary);
-  employerPortal.classList.toggle("hidden", isBeneficiary);
-
-  if (!isBeneficiary) {
-    renderDirectory();
-    renderRequestsTable();
-  }
-}
-
-btnBeneficiary.addEventListener("click", () => switchPortal("beneficiary"));
-btnEmployer.addEventListener("click", () => switchPortal("employer"));
-
-// SHA-256 Integrity Fingerprint
-async function sha256Hex(text) {
-  const bytes = new TextEncoder().encode(text);
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
-  return Array.from(new Uint8Array(digest))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-function generatePassportCode() {
-  const num = Math.floor(1000 + Math.random() * 9000);
-  return `VP-${num}`;
-}
-
-// Telemetry Metrics
-function updateMetrics() {
-  const validatedCount = passports.filter((p) => p.quiz_passed).length;
-  const voucherSum = passports.reduce(
-    (sum, p) => sum + Number(p.voucher_estimate || 0),
-    0
-  );
-
-  document.getElementById("metric-passports").textContent = passports.length;
-  document.getElementById("metric-validated").textContent = validatedCount;
-  document.getElementById("metric-vouchers").textContent = `$${voucherSum.toLocaleString()}`;
-  document.getElementById("metric-requests").textContent = requests.length;
-}
-
-// Render Active Beneficiary Passport Card
-function renderActivePassport() {
-  const box = document.getElementById("issued-passport-box");
-  if (!activePassport) {
-    box.classList.add("hidden");
+function showAlert(message, tone = "info") {
+  if (!message) {
+    alertBanner.classList.add("hidden");
     return;
   }
-  box.classList.remove("hidden");
-  document.getElementById("preview-name").textContent = activePassport.full_name;
-  document.getElementById("preview-role").textContent = `${activePassport.primary_role} • ${activePassport.location} (${activePassport.years_experience} yrs)`;
-  document.getElementById("preview-code").textContent = activePassport.passport_code;
-  document.getElementById("preview-doc-status").textContent = activePassport.record_status;
-  document.getElementById("preview-quiz-status").textContent = activePassport.quiz_passed
-    ? `Passed (${activePassport.quiz_score}/3)`
-    : "Pending Assessment";
-  document.getElementById("preview-voucher").textContent = `$${Number(
-    activePassport.voucher_estimate || 0
-  ).toFixed(2)} (${activePassport.voucher_status})`;
-  document.getElementById("preview-hash").textContent = activePassport.verification_hash;
-
-  const quizBadge = document.getElementById("quiz-badge");
-  if (activePassport.quiz_passed) {
-    quizBadge.textContent = `Verified (${activePassport.quiz_score}/3)`;
-    quizBadge.className = "badge";
-  } else {
-    quizBadge.textContent = "Unverified";
-    quizBadge.className = "badge neutral";
-  }
+  alertBanner.textContent = message;
+  alertBanner.className = `alert alert-${tone}`;
 }
 
-// 1. Create Digital Skills Passport
-document.getElementById("passport-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const full_name = document.getElementById("full_name").value.trim();
-  const location = document.getElementById("location").value.trim();
-  const primary_role = document.getElementById("primary_role").value.trim();
-  const years_experience = Number(document.getElementById("years_experience").value || 0);
-  const education_summary = document.getElementById("education_summary").value.trim();
-  const record_status = document.getElementById("record_status").value;
-  const skills = document
-    .getElementById("skills")
-    .value.split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-  const work_proof_url = document.getElementById("work_proof_url").value.trim();
-  const work_proof_notes = document.getElementById("work_proof_notes").value.trim();
-
-  const passport_code = generatePassportCode();
-  const verification_hash = await sha256Hex(
-    `${passport_code}|${full_name}|${primary_role}|${skills.join(",")}|${Date.now()}`
-  );
-
-  const saved = await createPassport({
-    passport_code,
-    full_name,
-    location,
-    primary_role,
-    years_experience,
-    education_summary,
-    record_status,
-    skills,
-    work_proof_url,
-    work_proof_notes,
-    verification_hash,
-    quiz_score: null,
-    quiz_passed: false,
-    voucher_estimate: 0,
-    voucher_status: "Not Requested",
-  });
-
-  activePassport = saved;
-  passports = [saved, ...passports.filter((p) => p.id !== saved.id)];
-  renderActivePassport();
-  updateMetrics();
-});
-
-// 2. Competency Check
-document.getElementById("quiz-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const resultBox = document.getElementById("quiz-result");
-  if (!activePassport) {
-    resultBox.textContent = "Create your Digital Skills Passport first so your score can be attached.";
-    resultBox.classList.remove("hidden");
-    return;
-  }
-
-  const formData = new FormData(e.target);
-  const score =
-    Number(formData.get("q1") || 0) +
-    Number(formData.get("q2") || 0) +
-    Number(formData.get("q3") || 0);
-  const passed = score >= 2;
-
-  const updated = await updatePassport(activePassport.id, {
-    quiz_score: score,
-    quiz_passed: passed,
-  });
-
-  activePassport = updated;
-  passports = passports.map((p) => (p.id === updated.id ? updated : p));
-  renderActivePassport();
-  updateMetrics();
-
-  resultBox.textContent = passed
-    ? `Assessment passed (${score}/3). Verified badge attached to ${activePassport.passport_code}.`
-    : `Score recorded (${score}/3). Review practical scenarios and retake anytime to reach 2/3.`;
-  resultBox.classList.remove("hidden");
-});
-
-// 3. Voucher / Bridging Stipend Estimator
-function calculateVoucherAmount() {
-  const fee = Number(document.getElementById("exam_fee").value || 0);
-  const months = Number(document.getElementById("bridging_months").value || 0);
-  const connectivity = document.getElementById("needs_connectivity").checked ? 40 * months : 0;
-  const baseBridging = months * 60;
-  const total = fee + baseBridging + connectivity;
-  document.getElementById("voucher-total").textContent = `$${total.toFixed(2)}`;
-  return total;
-}
-
-["exam_fee", "bridging_months", "needs_connectivity"].forEach((id) => {
-  document.getElementById(id).addEventListener("input", calculateVoucherAmount);
-});
-
-document.getElementById("voucher-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const voucherResult = document.getElementById("voucher-result");
-  if (!activePassport) {
-    voucherResult.textContent = "Create your Digital Skills Passport first to attach a voucher estimate.";
-    voucherResult.classList.remove("hidden");
-    return;
-  }
-
-  const total = calculateVoucherAmount();
-  const updated = await updatePassport(activePassport.id, {
-    voucher_estimate: total,
-    voucher_status: "Estimated — Ready for Partner Review",
-  });
-
-  activePassport = updated;
-  passports = passports.map((p) => (p.id === updated.id ? updated : p));
-  renderActivePassport();
-  updateMetrics();
-
-  voucherResult.textContent = `Voucher estimate ($${total.toFixed(2)}) saved to passport ${activePassport.passport_code}.`;
-  voucherResult.classList.remove("hidden");
-});
-
-// =========================================================
-// EMPLOYER DIRECTORY & FELLOWSHIP MODAL
-// =========================================================
-const searchInput = document.getElementById("search-candidates");
-const validatedOnlyCheckbox = document.getElementById("filter-validated-only");
-
-searchInput.addEventListener("input", renderDirectory);
-validatedOnlyCheckbox.addEventListener("change", renderDirectory);
-
-function renderDirectory() {
-  const grid = document.getElementById("candidate-grid");
-  const term = searchInput.value.trim().toLowerCase();
-  const onlyValidated = validatedOnlyCheckbox.checked;
-
-  const filtered = passports.filter((p) => {
-    if (onlyValidated && !p.quiz_passed) return false;
-    if (!term) return true;
-    const hay = `${p.full_name} ${p.primary_role} ${p.location} ${(p.skills || []).join(" ")}`.toLowerCase();
-    return hay.includes(term);
-  });
-
-  if (filtered.length === 0) {
-    grid.innerHTML = `<div class="card"><p class="muted">No candidate passports match the current filter. Switch to the Beneficiary Portal to issue a new passport.</p></div>`;
-    return;
-  }
-
-  grid.innerHTML = filtered
-    .map(
-      (p) => `
-      <article class="candidate-card">
-        <div>
-          <div class="card-head">
-            <div>
-              <strong>${escapeHtml(p.full_name)}</strong>
-              <div class="muted">${escapeHtml(p.primary_role)} • ${escapeHtml(p.location)}</div>
-            </div>
-            <span class="badge ${p.quiz_passed ? "" : "neutral"}">
-              ${p.quiz_passed ? `Verified (${p.quiz_score}/3)` : "Pending Check"}
-            </span>
-          </div>
-
-          <p class="proof-snippet"><strong>Education:</strong> ${escapeHtml(p.education_summary)} (${escapeHtml(p.record_status)})</p>
-          <p class="proof-snippet" style="margin-top:6px;"><strong>Work Proof:</strong> ${escapeHtml(p.work_proof_notes)}</p>
-          ${
-            p.work_proof_url
-              ? `<p style="margin:6px 0 0;font-size:0.84rem;"><a href="${escapeHtml(p.work_proof_url)}" target="_blank" rel="noopener">View Submitted Work Sample ↗</a></p>`
-              : ""
-          }
-        </div>
-
-        <div class="skill-tags">
-          ${(p.skills || []).map((s) => `<span class="skill-tag">${escapeHtml(s)}</span>`).join("")}
-        </div>
-
-        <div class="dossier-footer">
-          <div class="muted" style="font-size:0.8rem;">
-            Passport <strong>${escapeHtml(p.passport_code)}</strong> • Voucher Need: <strong>$${Number(p.voucher_estimate || 0).toFixed(0)}</strong>
-          </div>
-          <button class="btn primary full" data-request-id="${p.id}">
-            Request Fellowship / Interview
-          </button>
-        </div>
-      </article>
-    `
-    )
-    .join("");
-
-  grid.querySelectorAll("[data-request-id]").forEach((btn) => {
-    btn.addEventListener("click", () => openFellowshipModal(btn.dataset.requestId));
-  });
-}
-
-const modal = document.getElementById("fellowship-modal");
-function openFellowshipModal(passportId) {
-  const candidate = passports.find((p) => p.id === passportId);
-  if (!candidate) return;
-  document.getElementById("modal-passport-id").value = candidate.id;
-  document.getElementById("modal-candidate-name").value = candidate.full_name;
-  document.getElementById("modal-candidate-label").textContent =
-    `Issuing offer to ${candidate.full_name} (${candidate.passport_code} — ${candidate.primary_role})`;
-  modal.showModal();
-}
-
-document.getElementById("close-modal").addEventListener("click", () => modal.close());
-document.getElementById("cancel-modal").addEventListener("click", () => modal.close());
-
-document.getElementById("fellowship-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const payload = {
-    passport_id: document.getElementById("modal-passport-id").value,
-    candidate_name: document.getElementById("modal-candidate-name").value,
-    company_name: document.getElementById("company_name").value.trim(),
-    employer_email: document.getElementById("employer_email").value.trim(),
-    role_offered: document.getElementById("role_offered").value.trim(),
-    stipend_co_fund: Number(document.getElementById("stipend_co_fund").value || 0),
-    message: document.getElementById("fellowship_message").value.trim(),
-    status: "Issued to Candidate",
-  };
-
-  const savedReq = await createFellowshipRequest(payload);
-  requests = [savedReq, ...requests];
-  updateMetrics();
-  renderRequestsTable();
-  e.target.reset();
-  modal.close();
-});
-
-function renderRequestsTable() {
-  const tbody = document.getElementById("requests-tbody");
-  if (requests.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" class="muted">No fellowship requests issued yet.</td></tr>`;
-    return;
-  }
-  tbody.innerHTML = requests
-    .map(
-      (r) => `
-      <tr>
-        <td><strong>${escapeHtml(r.candidate_name)}</strong></td>
-        <td>${escapeHtml(r.company_name)}</td>
-        <td>${escapeHtml(r.role_offered)}</td>
-        <td>$${Number(r.stipend_co_fund || 0).toFixed(2)}/mo</td>
-        <td><span class="badge">${escapeHtml(r.status)}</span></td>
-      </tr>
-    `
-    )
-    .join("");
-}
-
-function escapeHtml(str) {
-  return String(str ?? "")
+function escapeHtml(value) {
+  return String(value ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
 }
 
-// Initial Boot
-async function init() {
-  calculateVoucherAmount();
-  const status = await checkConnection();
-  dbStatusEl.textContent = status.mode;
-
-  [passports, requests] = await Promise.all([
-    fetchPassports(),
-    fetchFellowshipRequests(),
-  ]);
-
-  if (passports.length > 0) {
-    activePassport = passports[0];
-    renderActivePassport();
+function isSafeUrl(url) {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "https:" || parsed.protocol === "http:";
+  } catch {
+    return false;
   }
-  updateMetrics();
-  renderDirectory();
-  renderRequestsTable();
 }
 
-init(); 
+async function computeSha256(input) {
+  const encoded = new TextEncoder().encode(input);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", encoded);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function makePassportCode() {
+  const digits = Math.floor(1000 + Math.random() * 9000);
+  return `VP-${digits}`;
+}
+
+function getSelectedPassport() {
+  return passports.find((item) => item.id === selectedPassportId) || null;
+}
+
+// Portal Navigation
+function activatePortal(mode) {
+  const isBeneficiary = mode === "beneficiary";
+  tabBeneficiary.classList.toggle("active", isBeneficiary);
+  tabEmployer.classList.toggle("active", !isBeneficiary);
+  beneficiaryView.classList.toggle("hidden", !isBeneficiary);
+  employerView.classList.toggle("hidden", isBeneficiary);
+
+  if (!isBeneficiary) {
+    renderEmployerDirectory();
+    renderFellowshipsTable();
+  }
+}
+
+tabBeneficiary.addEventListener("click", () => activatePortal("beneficiary"));
+tabEmployer.addEventListener("click", () => activatePortal("employer"));
+
+// Telemetry Stats
+function refreshStats() {
+  const verifiedTotal = passports.filter((p) => Boolean(p.quiz_passed)).length;
+  const voucherSum = passports.reduce(
+    (sum, p) => sum + Number(p.voucher_estimate || 0),
+    0
+  );
+
+  document.getElementById("stat-passports").textContent = String(passports.length);
+  document.getElementById("stat-verified").textContent = String(verifiedTotal);
+  document.getElementById("stat-vouchers").textContent = `$${voucherSum.toLocaleString("en-US", {
+    maximumFractionDigits: 0,
+  })}`;
+  document.getElementById("stat-fellowships").textContent = String(fellowshipRequests.length);
+}
+
+// Passport Selector & Card
+function syncPassportSelector() {
+  activePassportSelect.innerHTML = `<option value="">Start a new passport record</option>`;
+  for (const p of passports) {
+    const opt = document.createElement("option");
+    opt.value = p.id;
+    opt.textContent = `${p.passport_code} — ${p.full_name} (${p.target_role})`;
+    if (p.id === selectedPassportId) opt.selected = true;
+    activePassportSelect.appendChild(opt);
+  }
+}
+
+activePassportSelect.addEventListener("change", () => {
+  selectedPassportId = activePassportSelect.value || null;
+  renderActivePassportCard();
+  syncQuizPill();
+});
+
+function syncQuizPill() {
+  const current = getSelectedPassport();
+  const pill = document.getElementById("quiz-status-pill");
+  if (current && current.quiz_passed) {
+    pill.textContent = `Verified (${current.quiz_score}/3)`;
+    pill.className = "pill";
+  } else if (current && typeof current.quiz_score === "number") {
+    pill.textContent = `Score ${current.quiz_score}/3`;
+    pill.className = "pill pill-muted";
+  } else {
+    pill.textContent = "Not Taken";
+    pill.className = "pill pill-muted";
+  }
+}
+
+function renderActivePassportCard() {
+  const current = getSelectedPassport();
+  const card = document.getElementById("passport-card");
+  if (!current) {
+    card.classList.add("hidden");
+    return;
+  }
+
+  card.classList.remove("hidden");
+  document.getElementById("card-name").textContent = current.full_name;
+  document.getElementById("card-role-loc").textContent =
+    `${current.target_role} • ${current.current_location} (from ${current.origin_country}) • ${current.years_experience} yrs exp`;
+  document.getElementById("card-code").textContent = current.passport_code;
+  document.getElementById("card-doc-status").textContent = current.record_status;
+  document.getElementById("card-auth-status").textContent = current.work_authorization_status;
+  document.getElementById("card-quiz-status").textContent = current.quiz_passed
+    ? `Verified (${current.quiz_score}/3)`
+    : typeof current.quiz_score === "number"
+      ? `Needs Retake (${current.quiz_score}/3)`
+      : "Pending Check";
+  document.getElementById("card-voucher-status").textContent =
+    `$${Number(current.voucher_estimate || 0).toFixed(2)} (${current.voucher_status})`;
+  document.getElementById("card-hash").textContent = current.verification_hash;
+}
+
+// Create New Passport on Server
+document.getElementById("passport-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const submitBtn = document.getElementById("save-passport-btn");
+  submitBtn.disabled = true;
+
+  try {
+    const full_name = document.getElementById("full_name").value.trim();
+    const origin_country = document.getElementById("origin_country").value.trim();
+    const current_location = document.getElementById("current_location").value.trim();
+    const target_role = document.getElementById("target_role").value.trim();
+    const years_experience = Number(document.getElementById("years_experience").value || 0);
+    const education_summary = document.getElementById("education_summary").value.trim();
+    const record_status = document.getElementById("record_status").value;
+    const work_authorization_status = document.getElementById("work_authorization_status").value;
+    const skills = document
+      .getElementById("skills")
+      .value.split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const work_proof_url = document.getElementById("work_proof_url").value.trim();
+    const work_proof_notes = document.getElementById("work_proof_notes").value.trim();
+
+    const passport_code = makePassportCode();
+    const verification_hash = await computeSha256(
+      `${passport_code}|${full_name}|${origin_country}|${target_role}|${skills.join("|")}|${Date.now()}`
+    );
+
+    const created = await insertPassport({
+      passport_code,
+      full_name,
+      origin_country,
+      current_location,
+      target_role,
+      years_experience,
+      education_summary,
+      record_status,
+      work_authorization_status,
+      skills,
+      work_proof_url: work_proof_url || null,
+      work_proof_notes,
+      verification_hash,
+      quiz_score: null,
+      quiz_passed: false,
+      voucher_estimate: 0,
+      voucher_status: "Not Calculated",
+    });
+
+    passports = [created, ...passports.filter((item) => item.id !== created.id)];
+    selectedPassportId = created.id;
+    syncPassportSelector();
+    renderActivePassportCard();
+    syncQuizPill();
+    refreshStats();
+    showAlert(`Passport ${created.passport_code} for ${created.full_name} saved to server.`, "info");
+    event.target.reset();
+  } catch (err) {
+    showAlert(err.message, "error");
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+
+// Competency Check Submission
+document.getElementById("quiz-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const feedback = document.getElementById("quiz-feedback");
+  const current = getSelectedPassport();
+
+  if (!current) {
+    feedback.textContent = "Select or create a Digital Skills Passport first so the score links to a record.";
+    feedback.classList.remove("hidden");
+    return;
+  }
+
+  const submitBtn = document.getElementById("submit-quiz-btn");
+  submitBtn.disabled = true;
+
+  try {
+    const fd = new FormData(event.target);
+    const score =
+      Number(fd.get("q1") || 0) +
+      Number(fd.get("q2") || 0) +
+      Number(fd.get("q3") || 0);
+    const passed = score >= 2;
+
+    const updated = await patchPassport(current.id, {
+      quiz_score: score,
+      quiz_passed: passed,
+    });
+
+    passports = passports.map((item) => (item.id === updated.id ? updated : item));
+    renderActivePassportCard();
+    syncQuizPill();
+    refreshStats();
+
+    feedback.textContent = passed
+      ? `Competency check passed (${score}/3). Verified status persisted on ${updated.passport_code}.`
+      : `Score recorded (${score}/3). Two or more correct answers earn Verified status.`;
+    feedback.classList.remove("hidden");
+  } catch (err) {
+    showAlert(err.message, "error");
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+
+// Fee-Waiver & Bridging Voucher Estimator
+function computeVoucherTotal() {
+  const fee = Math.max(0, Number(document.getElementById("exam_fee").value || 0));
+  const months = Math.max(0, Number(document.getElementById("bridging_months").value || 0));
+  const monthlyBridging = months * 65;
+  const stipendAddon = document.getElementById("connectivity_stipend").checked ? months * 45 : 0;
+  const total = fee + monthlyBridging + stipendAddon;
+  document.getElementById("voucher-total").textContent = `$${total.toFixed(2)}`;
+  return total;
+}
+
+["exam_fee", "bridging_months", "connectivity_stipend"].forEach((id) => {
+  document.getElementById(id).addEventListener("input", computeVoucherTotal);
+  document.getElementById(id).addEventListener("change", computeVoucherTotal);
+});
+
+document.getElementById("voucher-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const feedback = document.getElementById("voucher-feedback");
+  const current = getSelectedPassport();
+
+  if (!current) {
+    feedback.textContent = "Select or create a Digital Skills Passport first to attach a voucher estimate.";
+    feedback.classList.remove("hidden");
+    return;
+  }
+
+  const submitBtn = document.getElementById("save-voucher-btn");
+  submitBtn.disabled = true;
+
+  try {
+    const amount = computeVoucherTotal();
+    const updated = await patchPassport(current.id, {
+      voucher_estimate: amount,
+      voucher_status: "Calculated — Ready for Partner Review",
+    });
+
+    passports = passports.map((item) => (item.id === updated.id ? updated : item));
+    renderActivePassportCard();
+    refreshStats();
+
+    feedback.textContent = `Voucher estimate ($${amount.toFixed(2)}) saved to passport ${updated.passport_code}.`;
+    feedback.classList.remove("hidden");
+  } catch (err) {
+    showAlert(err.message, "error");
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+
+// Employer Directory & Fellowship Requests
+const candidateSearch = document.getElementById("candidate-search");
+const onlyVerifiedFilter = document.getElementById("only-verified-filter");
+candidateSearch.addEventListener("input", renderEmployerDirectory);
+onlyVerifiedFilter.addEventListener("change", renderEmployerDirectory);
+
+function renderEmployerDirectory() {
+  const grid = document.getElementById("directory-grid");
+  const query = candidateSearch.value.trim().toLowerCase();
+  const verifiedOnly = onlyVerifiedFilter.checked;
+
+  const matches = passports.filter((p) => {
+    if (verifiedOnly && !p.quiz_passed) return false;
+    if (!query) return true;
+    const haystack = [
+      p.full_name,
+      p.origin_country,
+      p.current_location,
+      p.target_role,
+      p.education_summary,
+      ...(p.skills || []),
+    ]
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes(query);
+  });
+
+  if (matches.length === 0) {
+    grid.innerHTML = `<div class="card"><p class="card-desc">No candidate passports match your current search or filter.</p></div>`;
+    return;
+  }
+
+  grid.innerHTML = matches
+    .map((p) => {
+      const safeLink = p.work_proof_url && isSafeUrl(p.work_proof_url) ? p.work_proof_url : "";
+      return `
+        <article class="candidate-card">
+          <div>
+            <div class="card-header">
+              <div>
+                <strong>${escapeHtml(p.full_name)}</strong>
+                <div class="candidate-meta">${escapeHtml(p.target_role)} • ${escapeHtml(p.current_location)}</div>
+              </div>
+              <span class="pill ${p.quiz_passed ? "" : "pill-muted"}">
+                ${p.quiz_passed ? `Verified (${p.quiz_score}/3)` : "Unverified"}
+              </span>
+            </div>
+
+            <p class="candidate-line"><strong>Origin &amp; Readiness:</strong> From ${escapeHtml(p.origin_country)} • ${escapeHtml(p.work_authorization_status)}</p>
+            <p class="candidate-line"><strong>Education / Records:</strong> ${escapeHtml(p.education_summary)} (${escapeHtml(p.record_status)})</p>
+            <p class="candidate-line"><strong>Work Proof:</strong> ${escapeHtml(p.work_proof_notes)}</p>
+            ${
+              safeLink
+                ? `<a class="proof-link" href="${escapeHtml(safeLink)}" target="_blank" rel="noopener noreferrer">Open Work Proof Link ↗</a>`
+                : ""
+            }
+          </div>
+
+          <div class="skill-list">
+            ${(p.skills || []).map((skill) => `<span class="skill-chip">${escapeHtml(skill)}</span>`).join("")}
+          </div>
+
+          <div class="candidate-foot">
+            <div class="foot-meta">
+              Passport <strong>${escapeHtml(p.passport_code)}</strong> • Voucher Need: <strong>$${Number(p.voucher_estimate || 0).toFixed(0)}</strong>
+            </div>
+            <button type="button" class="btn btn-primary full-width" data-fellowship-target="${escapeHtml(p.id)}">
+              Request Fellowship
+            </button>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+
+  grid.querySelectorAll("[data-fellowship-target]").forEach((btn) => {
+    btn.addEventListener("click", () => openFellowshipDialog(btn.dataset.fellowshipTarget));
+  });
+}
+
+const fellowshipDialog = document.getElementById("fellowship-dialog");
+
+function openFellowshipDialog(passportId) {
+  const candidate = passports.find((p) => p.id === passportId);
+  if (!candidate) return;
+
+  document.getElementById("dialog-passport-id").value = candidate.id;
+  document.getElementById("dialog-candidate-name").value = candidate.full_name;
+  document.getElementById("dialog-passport-code").value = candidate.passport_code;
+  document.getElementById("dialog-candidate-summary").textContent =
+    `Candidate: ${candidate.full_name} (${candidate.passport_code}) — Target role: ${candidate.target_role}`;
+
+  if (typeof fellowshipDialog.showModal === "function") {
+    fellowshipDialog.showModal();
+  }
+}
+
+document.getElementById("close-dialog-btn").addEventListener("click", () => fellowshipDialog.close());
+document.getElementById("cancel-dialog-btn").addEventListener("click", () => fellowshipDialog.close());
+
+document.getElementById("fellowship-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const submitBtn = document.getElementById("submit-fellowship-btn");
+  submitBtn.disabled = true;
+
+  try {
+    const payload = {
+      passport_id: document.getElementById("dialog-passport-id").value,
+      candidate_name: document.getElementById("dialog-candidate-name").value,
+      passport_code: document.getElementById("dialog-passport-code").value,
+      organization_name: document.getElementById("organization_name").value.trim(),
+      employer_email: document.getElementById("employer_email").value.trim(),
+      role_offered: document.getElementById("role_offered").value.trim(),
+      monthly_stipend_cofund: Number(document.getElementById("monthly_stipend_cofund").value || 0),
+      onboarding_notes: document.getElementById("onboarding_notes").value.trim() || null,
+      status: "Fellowship Requested",
+    };
+
+    const created = await insertFellowshipRequest(payload);
+    fellowshipRequests = [created, ...fellowshipRequests];
+    refreshStats();
+    renderFellowshipsTable();
+    event.target.reset();
+    fellowshipDialog.close();
+    showAlert(`Fellowship request for ${created.candidate_name} saved to server.`, "info");
+  } catch (err) {
+    showAlert(err.message, "error");
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+
+function renderFellowshipsTable() {
+  const tbody = document.getElementById("fellowships-tbody");
+  if (fellowshipRequests.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty-cell">No fellowship requests recorded yet.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = fellowshipRequests
+    .map(
+      (req) => `
+      <tr>
+        <td><strong>${escapeHtml(req.candidate_name)}</strong></td>
+        <td><code>${escapeHtml(req.passport_code)}</code></td>
+        <td>${escapeHtml(req.organization_name)}</td>
+        <td>${escapeHtml(req.role_offered)}</td>
+        <td>$${Number(req.monthly_stipend_cofund || 0).toFixed(2)}/mo</td>
+        <td><span class="pill">${escapeHtml(req.status)}</span></td>
+      </tr>
+    `
+    )
+    .join("");
+}
+
+// Boot From Server
+async function boot() {
+  computeVoucherTotal();
+  const ping = await pingServer();
+
+  if (ping.online) {
+    statusChip.textContent = ping.label;
+    statusChip.className = "status-chip status-online";
+    showAlert("");
+  } else {
+    statusChip.textContent = ping.label;
+    statusChip.className = "status-chip status-offline";
+    showAlert(ping.detail, "warn");
+  }
+
+  try {
+    [passports, fellowshipRequests] = await Promise.all([
+      listPassports(),
+      listFellowshipRequests(),
+    ]);
+    if (passports.length > 0 && !selectedPassportId) {
+      selectedPassportId = passports[0].id;
+    }
+  } catch (err) {
+    showAlert(`Could not load server records: ${err.message}`, "error");
+  }
+
+  syncPassportSelector();
+  renderActivePassportCard();
+  syncQuizPill();
+  refreshStats();
+  renderEmployerDirectory();
+  renderFellowshipsTable();
+}
+
+boot(); 

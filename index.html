@@ -3,262 +3,323 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>VeriPath — Credential Recognition &amp; Skills Verification System</title>
+  <title>VeriPath — Credential Recognition &amp; Skills Verification</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header class="topbar">
     <div class="container topbar-inner">
       <div class="brand">
-        <span class="brand-mark">VP</span>
+        <div class="brand-badge">VP</div>
         <div>
-          <strong>VeriPath</strong>
-          <small>Credential Recognition &amp; Skills Verification</small>
+          <span class="brand-name">VeriPath</span>
+          <span class="brand-sub">Credential Recognition &amp; Skills Verification • Built by Nasra Abdi Ahmed</span>
         </div>
       </div>
 
-      <div class="portal-switch" role="tablist" aria-label="Workspace Switcher">
-        <button id="btn-beneficiary-portal" class="switch-btn active" role="tab" aria-selected="true">
-          Beneficiary Portal
-        </button>
-        <button id="btn-employer-portal" class="switch-btn" role="tab" aria-selected="false">
-          Employer Portal
-        </button>
-      </div>
+      <nav class="portal-switch" aria-label="System Portals">
+        <button id="tab-beneficiary" class="tab-btn active" type="button">Beneficiary Portal</button>
+        <button id="tab-employer" class="tab-btn" type="button">Employer Portal</button>
+      </nav>
 
-      <div id="db-status" class="db-pill">Connecting to database...</div>
+      <div id="server-status" class="status-chip status-connecting">Connecting to server...</div>
     </div>
   </header>
 
-  <main class="container">
-    <!-- Live Operational Metrics Bar -->
-    <section class="metrics-strip" aria-label="Platform Telemetry">
-      <div class="metric-card">
-        <span class="metric-label">Verified Passports</span>
-        <strong id="metric-passports">0</strong>
-      </div>
-      <div class="metric-card">
-        <span class="metric-label">Skill-Validated Talent</span>
-        <strong id="metric-validated">0</strong>
-      </div>
-      <div class="metric-card">
-        <span class="metric-label">Voucher Support Calculated</span>
-        <strong id="metric-vouchers">$0</strong>
-      </div>
-      <div class="metric-card">
-        <span class="metric-label">Active Fellowship Requests</span>
-        <strong id="metric-requests">0</strong>
-      </div>
+  <main class="container main-content">
+    <!-- Live Server Telemetry -->
+    <section class="stats-grid" aria-label="Live System Metrics">
+      <article class="stat-card">
+        <span class="stat-label">Skills Passports</span>
+        <strong id="stat-passports" class="stat-value">0</strong>
+      </article>
+      <article class="stat-card">
+        <span class="stat-label">Competency-Verified</span>
+        <strong id="stat-verified" class="stat-value">0</strong>
+      </article>
+      <article class="stat-card">
+        <span class="stat-label">Voucher / Stipend Estimates</span>
+        <strong id="stat-vouchers" class="stat-value">$0</strong>
+      </article>
+      <article class="stat-card">
+        <span class="stat-label">Fellowship Requests</span>
+        <strong id="stat-fellowships" class="stat-value">0</strong>
+      </article>
     </section>
 
-    <!-- =========================================================
-         PORTAL 1: BENEFICIARY WORKSPACE
-    ========================================================== -->
-    <section id="beneficiary-portal" class="portal-view active">
-      <div class="portal-header">
+    <div id="global-alert" class="alert hidden" role="status"></div>
+
+    <!-- =====================================================================
+         BENEFICIARY WORKSPACE
+    ====================================================================== -->
+    <section id="beneficiary-view" class="view-panel">
+      <div class="section-head">
         <div>
           <h1>Beneficiary Workspace</h1>
-          <p>Build a tamper-evident Digital Skills Passport, verify practical competency, and calculate fee-waiver or bridging voucher support when traditional documents are unavailable.</p>
+          <p>Issue a Digital Skills Passport with alternative work proof when paper credentials are missing or unrecognized, pass a practical competency check, and calculate fee-waiver or bridging voucher support.</p>
+        </div>
+        <div class="passport-selector-wrap">
+          <label for="active-passport-select">Active Passport Record</label>
+          <select id="active-passport-select">
+            <option value="">Create new passport below</option>
+          </select>
         </div>
       </div>
 
-      <div class="workspace-grid">
-        <!-- Left Column: Passport Builder -->
+      <div class="two-col">
+        <!-- Column 1: Digital Skills Passport -->
         <div class="card">
-          <div class="card-head">
+          <div class="card-header">
             <h2>1. Digital Skills Passport</h2>
-            <span class="badge">Alternative Proof Enabled</span>
+            <span class="pill">Alternative Proof Ready</span>
           </div>
 
-          <form id="passport-form" class="form-stack">
-            <div class="form-row">
+          <form id="passport-form" class="stack-form">
+            <div class="grid-2">
               <label>
                 Full Name *
-                <input type="text" id="full_name" required placeholder="e.g. Amina Hassan" />
+                <input type="text" id="full_name" required placeholder="e.g. Yusuf Mohamed" />
               </label>
               <label>
-                Current City / Location *
-                <input type="text" id="location" required placeholder="e.g. Garissa, Kenya" />
+                Origin Country *
+                <input type="text" id="origin_country" required placeholder="e.g. Somalia" />
               </label>
             </div>
 
-            <div class="form-row">
+            <div class="grid-2">
               <label>
-                Target Role / Trade *
-                <input type="text" id="primary_role" required placeholder="e.g. Junior Web Developer / Data Clerk" />
+                Current Location *
+                <input type="text" id="current_location" required placeholder="e.g. Garissa, Kenya" />
               </label>
+              <label>
+                Target Role *
+                <input type="text" id="target_role" required placeholder="e.g. Frontend Developer / Data Specialist" />
+              </label>
+            </div>
+
+            <div class="grid-2">
               <label>
                 Years of Experience *
-                <input type="number" id="years_experience" min="0" max="45" value="2" required />
-              </label>
-            </div>
-
-            <div class="form-row">
-              <label>
-                Prior Education / Training *
-                <input type="text" id="education_summary" required placeholder="e.g. BSc Computer Science (3 yrs completed)" />
+                <input type="number" id="years_experience" min="0" max="60" value="3" required />
               </label>
               <label>
-                Paper Document Status *
+                Paper Record Status *
                 <select id="record_status">
                   <option value="Missing / Inaccessible Records">Missing / Inaccessible Records</option>
                   <option value="Unrecognized Foreign Credential">Unrecognized Foreign Credential</option>
-                  <option value="Partial Transcripts Available">Partial Transcripts Available</option>
-                  <option value="Verified Paper Certificate">Verified Paper Certificate</option>
+                  <option value="Partial Records Available">Partial Records Available</option>
+                  <option value="Verified Certificate Held">Verified Certificate Held</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="grid-2">
+              <label>
+                Education / Training Background *
+                <input type="text" id="education_summary" required placeholder="e.g. BSc Information Technology (3 yrs)" />
+              </label>
+              <label>
+                Work / Pathway Readiness *
+                <select id="work_authorization_status">
+                  <option value="Refugee Mandate / Work Pathway Active">Refugee Mandate / Work Pathway Active</option>
+                  <option value="Work Permit Verified">Work Permit Verified</option>
+                  <option value="Remote / Freelance Eligible">Remote / Freelance Eligible</option>
+                  <option value="Onboarding Support Needed">Onboarding Support Needed</option>
                 </select>
               </label>
             </div>
 
             <label>
-              Core Practical Skills (comma-separated) *
-              <input type="text" id="skills" required placeholder="e.g. HTML, CSS, JavaScript, SQL, Customer Support" />
+              Core Skills (comma-separated) *
+              <input type="text" id="skills" required placeholder="e.g. HTML, CSS, JavaScript, Python, SQL" />
             </label>
 
             <label>
-              Portfolio, Repository, or Reference Link (optional)
+              Portfolio, GitHub, or Work Sample URL (optional)
               <input type="url" id="work_proof_url" placeholder="https://github.com/username/project" />
             </label>
 
             <label>
               Practical Work Proof &amp; Experience Evidence *
-              <textarea id="work_proof_notes" rows="3" required placeholder="Describe concrete projects, systems built, tools used, or prior duties employers can verify..."></textarea>
+              <textarea id="work_proof_notes" rows="3" required placeholder="Describe real projects, systems built, tools used, or measurable outcomes employers can verify..."></textarea>
             </label>
 
-            <button type="submit" class="btn primary full">Generate &amp; Save Skills Passport</button>
+            <button id="save-passport-btn" type="submit" class="btn btn-primary full-width">
+              Save Passport to Server
+            </button>
           </form>
 
-          <!-- Live Issued Passport Card -->
-          <div id="issued-passport-box" class="passport-preview hidden">
+          <!-- Live Issued Passport Dossier -->
+          <div id="passport-card" class="passport-box hidden">
             <div class="passport-top">
               <div>
-                <span class="passport-tag">ACTIVE DIGITAL SKILLS PASSPORT</span>
-                <h3 id="preview-name">—</h3>
-                <p id="preview-role">—</p>
+                <span class="passport-kicker">VERIFIED DIGITAL SKILLS PASSPORT</span>
+                <h3 id="card-name"></h3>
+                <p id="card-role-loc"></p>
               </div>
-              <span id="preview-code" class="code-chip">VP-0000</span>
+              <span id="card-code" class="code-badge"></span>
             </div>
-            <div class="passport-meta">
-              <div><strong>Document Handling:</strong> <span id="preview-doc-status">—</span></div>
-              <div><strong>Validation Status:</strong> <span id="preview-quiz-status">Pending Assessment</span></div>
-              <div><strong>Voucher Estimate:</strong> <span id="preview-voucher">$0</span></div>
-            </div>
-            <div class="hash-box">
-              <span>SHA-256 Integrity Fingerprint</span>
-              <code id="preview-hash">—</code>
+
+            <dl class="passport-details">
+              <div>
+                <dt>Document Status</dt>
+                <dd id="card-doc-status"></dd>
+              </div>
+              <div>
+                <dt>Work Readiness</dt>
+                <dd id="card-auth-status"></dd>
+              </div>
+              <div>
+                <dt>Competency Check</dt>
+                <dd id="card-quiz-status"></dd>
+              </div>
+              <div>
+                <dt>Voucher Estimate</dt>
+                <dd id="card-voucher-status"></dd>
+              </div>
+            </dl>
+
+            <div class="hash-panel">
+              <span>SHA-256 Record Fingerprint</span>
+              <code id="card-hash"></code>
             </div>
           </div>
         </div>
 
-        <!-- Right Column: Competency Check + Voucher Calculator -->
+        <!-- Column 2: Competency Check + Voucher Calculator -->
         <div class="stack-col">
-          <!-- Competency Assessment -->
           <div class="card">
-            <div class="card-head">
+            <div class="card-header">
               <h2>2. Practical Competency Check</h2>
-              <span id="quiz-badge" class="badge neutral">Unverified</span>
+              <span id="quiz-status-pill" class="pill pill-muted">Not Taken</span>
             </div>
-            <p class="muted">Complete this practical scenario check to attach a verified score directly to your active passport.</p>
+            <p class="card-desc">Complete this practical validation check to attach a verified competency score to the active passport in PostgreSQL.</p>
 
-            <form id="quiz-form" class="form-stack">
-              <div class="quiz-item">
-                <p><strong>Q1.</strong> A client reports a web form fails to save user data after refresh. What is the first diagnostic step?</p>
-                <label class="radio-line"><input type="radio" name="q1" value="1" required /> Inspect browser network/console logs and verify database write permissions</label>
-                <label class="radio-line"><input type="radio" name="q1" value="0" /> Change the font size and reload the stylesheet</label>
-              </div>
+            <form id="quiz-form" class="stack-form">
+              <fieldset class="question-box">
+                <legend>1. A candidate's degree certificate is unavailable due to displacement. What provides strongest hiring proof?</legend>
+                <label class="choice-row">
+                  <input type="radio" name="q1" value="1" required />
+                  Practical work samples, competency assessment score, and tamper-evident record hash
+                </label>
+                <label class="choice-row">
+                  <input type="radio" name="q1" value="0" />
+                  Rejecting the applicant until an original paper seal is mailed
+                </label>
+              </fieldset>
 
-              <div class="quiz-item">
-                <p><strong>Q2.</strong> When an applicant's original diploma cannot be retrieved, what establishes credible hiring proof?</p>
-                <label class="radio-line"><input type="radio" name="q2" value="1" required /> Standardized practical assessment + verifiable work samples + tamper-evident record hash</label>
-                <label class="radio-line"><input type="radio" name="q2" value="0" /> Leaving skills undocumented until paper records arrive</label>
-              </div>
+              <fieldset class="question-box">
+                <legend>2. After submitting a new profile, a page reload shows empty fields. What is the first server check?</legend>
+                <label class="choice-row">
+                  <input type="radio" name="q2" value="1" required />
+                  Verify database table insert/select permissions and confirm the query returns persisted rows
+                </label>
+                <label class="choice-row">
+                  <input type="radio" name="q2" value="0" />
+                  Rename CSS color variables
+                </label>
+              </fieldset>
 
-              <div class="quiz-item">
-                <p><strong>Q3.</strong> Which database control ensures employers can read candidate profiles without altering someone else's record?</p>
-                <label class="radio-line"><input type="radio" name="q3" value="1" required /> Role-based Row Level Security (RLS) policies</label>
-                <label class="radio-line"><input type="radio" name="q3" value="0" /> Sharing admin database passwords publicly</label>
-              </div>
+              <fieldset class="question-box">
+                <legend>3. How should bridging stipends and fee waivers be structured in a skills pathway?</legend>
+                <label class="choice-row">
+                  <input type="radio" name="q3" value="1" required />
+                  Transparently estimated per candidate and co-funded by partner organizations or sponsors
+                </label>
+                <label class="choice-row">
+                  <input type="radio" name="q3" value="0" />
+                  Hidden until after a candidate pays unbudgeted assessment fees
+                </label>
+              </fieldset>
 
-              <button type="submit" class="btn secondary full">Submit Assessment &amp; Attach Score</button>
+              <button id="submit-quiz-btn" type="submit" class="btn btn-dark full-width">
+                Submit Competency Check
+              </button>
             </form>
-            <div id="quiz-result" class="notice hidden"></div>
+            <div id="quiz-feedback" class="feedback hidden"></div>
           </div>
 
-          <!-- Voucher & Bridging Stipend Calculator -->
           <div class="card">
-            <div class="card-head">
+            <div class="card-header">
               <h2>3. Fee-Waiver &amp; Bridging Voucher Estimator</h2>
-              <span class="badge">Partner-Funded Support</span>
+              <span class="pill">Partner Support</span>
             </div>
-            <p class="muted">Estimate credential translation, exam fee-waiver, or transition stipend support for partner NGO and grant programs.</p>
+            <p class="card-desc">Calculate estimated credential evaluation, exam fee-waiver, or bridging stipend support for partner NGOs and sponsors.</p>
 
-            <form id="voucher-form" class="form-stack">
-              <div class="form-row">
+            <form id="voucher-form" class="stack-form">
+              <div class="grid-2">
                 <label>
-                  Credential Evaluation / Exam Fee ($)
-                  <input type="number" id="exam_fee" min="0" max="1000" value="85" />
+                  Assessment / Credential Fee ($)
+                  <input type="number" id="exam_fee" min="0" max="2000" step="5" value="75" />
                 </label>
                 <label>
-                  Bridging Period (Months)
-                  <input type="number" id="bridging_months" min="0" max="6" value="2" />
+                  Bridging Support Duration (Months)
+                  <input type="number" id="bridging_months" min="0" max="12" step="1" value="2" />
                 </label>
               </div>
-              <label class="checkbox-line">
-                <input type="checkbox" id="needs_connectivity" checked />
-                Include connectivity &amp; transit allowance ($40/month)
+
+              <label class="choice-row">
+                <input type="checkbox" id="connectivity_stipend" checked />
+                Include monthly connectivity &amp; transit stipend ($45 / month)
               </label>
 
-              <div class="voucher-summary">
+              <div class="voucher-box">
                 <span>Estimated Voucher / Stipend Package</span>
                 <strong id="voucher-total">$285.00</strong>
               </div>
 
-              <button type="submit" class="btn primary full">Attach Voucher Estimate to Passport</button>
+              <button id="save-voucher-btn" type="submit" class="btn btn-primary full-width">
+                Attach Voucher Estimate to Passport
+              </button>
             </form>
-            <div id="voucher-result" class="notice hidden"></div>
+            <div id="voucher-feedback" class="feedback hidden"></div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- =========================================================
-         PORTAL 2: EMPLOYER WORKSPACE
-    ========================================================== -->
-    <section id="employer-portal" class="portal-view hidden">
-      <div class="portal-header">
+    <!-- =====================================================================
+         EMPLOYER WORKSPACE
+    ====================================================================== -->
+    <section id="employer-view" class="view-panel hidden">
+      <div class="section-head">
         <div>
-          <h1>Employer &amp; Partner Directory</h1>
-          <p>Review skill-validated candidates, inspect practical work proof and integrity fingerprints, and issue fellowship or hiring offers.</p>
+          <h1>Employer &amp; Partner Review Portal</h1>
+          <p>Inspect candidate dossiers, verify practical work proof and competency scores, and issue fellowship or hiring requests stored on the server.</p>
         </div>
-        <div class="filter-bar">
-          <input type="search" id="search-candidates" placeholder="Search by role, skill, or location..." />
-          <label class="checkbox-line">
-            <input type="checkbox" id="filter-validated-only" />
-            Validated only
+
+        <div class="filter-controls">
+          <input type="search" id="candidate-search" placeholder="Search name, role, skill, or city..." />
+          <label class="choice-row filter-check">
+            <input type="checkbox" id="only-verified-filter" />
+            Verified only
           </label>
         </div>
       </div>
 
-      <div id="candidate-grid" class="candidate-grid"></div>
+      <div id="directory-grid" class="directory-grid"></div>
 
-      <!-- Recent Fellowship Requests Table -->
-      <div class="card mt-24">
-        <div class="card-head">
-          <h2>Issued Fellowship &amp; Hiring Requests</h2>
-          <span class="badge neutral">Live Database Log</span>
+      <div class="card section-gap">
+        <div class="card-header">
+          <h2>Server Fellowship &amp; Hiring Requests</h2>
+          <span class="pill pill-muted">Live PostgreSQL Records</span>
         </div>
-        <div class="table-wrap">
-          <table class="data-table">
+        <div class="table-responsive">
+          <table class="requests-table">
             <thead>
               <tr>
                 <th>Candidate</th>
-                <th>Organization</th>
+                <th>Passport</th>
+                <th>Employer / Organization</th>
                 <th>Role Offered</th>
-                <th>Employer Stipend Co-Fund</th>
+                <th>Monthly Stipend Co-Fund</th>
                 <th>Status</th>
               </tr>
             </thead>
-            <tbody id="requests-tbody">
-              <tr><td colspan="5" class="muted">No fellowship requests issued yet.</td></tr>
+            <tbody id="fellowships-tbody">
+              <tr>
+                <td colspan="6" class="empty-cell">No fellowship requests recorded yet.</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -266,43 +327,48 @@
     </section>
   </main>
 
-  <!-- Employer Fellowship Modal -->
-  <dialog id="fellowship-modal" class="modal">
-    <form id="fellowship-form" class="form-stack">
-      <div class="card-head">
-        <h3>Request Fellowship / Interview</h3>
-        <button type="button" id="close-modal" class="icon-btn" aria-label="Close">✕</button>
+  <!-- Fellowship Request Modal -->
+  <dialog id="fellowship-dialog" class="dialog-box">
+    <form id="fellowship-form" class="stack-form">
+      <div class="card-header">
+        <h3>Issue Fellowship Request</h3>
+        <button id="close-dialog-btn" type="button" class="close-btn" aria-label="Close modal">✕</button>
       </div>
-      <p id="modal-candidate-label" class="muted"></p>
-      <input type="hidden" id="modal-passport-id" />
-      <input type="hidden" id="modal-candidate-name" />
+      <p id="dialog-candidate-summary" class="card-desc"></p>
+
+      <input type="hidden" id="dialog-passport-id" />
+      <input type="hidden" id="dialog-candidate-name" />
+      <input type="hidden" id="dialog-passport-code" />
 
       <label>
         Company / Organization Name *
-        <input type="text" id="company_name" required placeholder="e.g. Savannah Cloud Systems" />
+        <input type="text" id="organization_name" required placeholder="e.g. East Africa Cloud &amp; Talent" />
       </label>
+
       <label>
         Hiring Contact Email *
-        <input type="email" id="employer_email" required placeholder="hiring@company.com" />
+        <input type="email" id="employer_email" required placeholder="hiring@organization.org" />
       </label>
-      <div class="form-row">
+
+      <div class="grid-2">
         <label>
-          Role / Fellowship Title *
-          <input type="text" id="role_offered" required placeholder="e.g. Frontend Support Fellow" />
+          Fellowship / Role Title *
+          <input type="text" id="role_offered" required placeholder="e.g. Junior Web Fellow" />
         </label>
         <label>
           Employer Monthly Stipend Co-Fund ($)
-          <input type="number" id="stipend_co_fund" min="0" value="150" />
+          <input type="number" id="monthly_stipend_cofund" min="0" max="5000" step="10" value="150" />
         </label>
       </div>
+
       <label>
-        Next Steps / Assessment Note
-        <textarea id="fellowship_message" rows="3" placeholder="Share fellowship duration, onboarding timeline, or interview details..."></textarea>
+        Onboarding &amp; Mentorship Notes
+        <textarea id="onboarding_notes" rows="3" placeholder="Share fellowship terms, interview schedule, or technical onboarding steps..."></textarea>
       </label>
 
-      <div class="modal-actions">
-        <button type="button" id="cancel-modal" class="btn secondary">Cancel</button>
-        <button type="submit" class="btn primary">Send Fellowship Request</button>
+      <div class="dialog-actions">
+        <button id="cancel-dialog-btn" type="button" class="btn btn-secondary">Cancel</button>
+        <button id="submit-fellowship-btn" type="submit" class="btn btn-primary">Submit Fellowship Request</button>
       </div>
     </form>
   </dialog>

@@ -1,15 +1,34 @@
-# VeriPath — Credential Recognition & Skills Validation for Skilled Refugees
+# VeriPath — Credential Recognition & Skills Verification System
 
-Built for the **"Unlocking Displaced Talent: Pathways for Skilled Refugees"** Mini-Hackathon (November 2026), targeting **Track 1: Credential Recognition & Skills Validation** aligned with **UN SDG 4 (Quality Education)** and **UN SDG 8 (Decent Work & Economic Growth)**.
+VeriPath is a web application designed to help displaced professionals and skilled talent with missing or unrecognized credentials build a verifiable **Digital Skills Passport**, complete practical competency checks, estimate fee-waiver or bridging voucher support, and connect with employers through fellowship requests.
 
-## Problem Statement
-Skilled refugees frequently experience severe underemployment ("brain waste") because paper diplomas were left behind during displacement or foreign qualifications are not recognized by local employers and licensing boards.
+Built by **Nasra Abdi Ahmed**.
 
-## Key Features
-1. **Digital Credential & Skills Passport Builder**: Multi-step onboarding that captures prior foreign degrees, flags missing documentation status, attaches practical portfolio evidence, and generates a SHA-256 verification hash.
-2. **Domain Competency Evaluation**: Interactive scenario assessments (Software/Data, Clinical Healthcare, IFRS Finance) that upgrade a candidate's passport from *Provisional* to *Verified Competency*.
-3. **Bridging & Re-Certification Fee Waiver Matcher**: Calculates donor/partner stipend coverage (50%–100%) for national equivalency audits, board licensing exams, and certification vouchers.
-4. **Employer & Verifier Portal**: Allows hiring partners and accreditation bodies to verify Credential IDs, filter vetted talent by sector, and download machine-readable verification JSON dossiers.
+---
 
-## How to Run Locally
-Open `index.html` directly in any modern web browser—no build tools or external dependencies required.
+## Core Portals & Features
+
+### 1. Beneficiary Portal
+* **Digital Skills Passport Builder:** Captures candidate background, target role, education history, document status (such as missing or unrecognized records), work readiness, practical work proof, and a generated `SHA-256` record fingerprint.
+* **Practical Competency Check:** Evaluates scenario-based decision-making and attaches verification status directly to the selected passport record.
+* **Fee-Waiver & Bridging Voucher Estimator:** Calculates estimated assessment fees, bridging support, and connectivity/transit allowances for partner NGOs and sponsors.
+
+### 2. Employer Portal
+* **Candidate Directory & Search:** Filter candidates by role, skills, location, or verified competency status.
+* **Candidate Dossiers:** Review work proof, document status, voucher estimates, and record codes.
+* **Fellowship Requests:** Submit fellowship or interview requests and track issued requests in a live table.
+
+---
+
+## Tech Stack
+* **Frontend:** HTML5, CSS3, Vanilla JavaScript (ES Modules)
+* **Backend & Database:** Supabase (PostgreSQL with Row Level Security)
+* **Hosting:** GitHub Pages / Netlify
+
+---
+
+## Setup & Deployment
+
+1. **Create Database Tables:** Run `supabase/schema.sql` inside your Supabase project's **SQL Editor**.
+2. **Configure Supabase Keys:** Update `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` in `backend.js` with your project URL and publishable (`anon`) key.
+3. **Publish Live:** Push the repository to GitHub and deploy the root directory via **GitHub Pages** or **Netlify**. 

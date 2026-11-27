@@ -1,117 +1,105 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-// Replace with your exact Supabase Project URL and Publishable/Anon Key
-const SUPABASE_URL = "https://guhsaixfkjrbobzgacff.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_MSNDe4CnVoQCFgLGScg10A_Ko6ESINH";
+// Replace with your live Supabase project URL and publishable / anon key
+const SUPABASE_URL = "https://YOUR-PROJECT-REF.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "YOUR-SUPABASE-PUBLISHABLE-OR-ANON-KEY";
 
-const isConfigured =
+const hasValidConfig =
   SUPABASE_URL.startsWith("https://") &&
   !SUPABASE_URL.includes("YOUR-PROJECT-REF") &&
-  SUPABASE_ANON_KEY.length > 20;
+  SUPABASE_PUBLISHABLE_KEY.length > 20 &&
+  !SUPABASE_PUBLISHABLE_KEY.includes("YOUR-SUPABASE");
 
-export const supabase = isConfigured
-  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+export const supabase = hasValidConfig
+  ? createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)
   : null;
 
-const LOCAL_PASSPORTS_KEY = "veripath_passports_v1";
-const LOCAL_REQUESTS_KEY = "veripath_requests_v1";
-
-function readLocal(key) {
-  try {
-    return JSON.parse(localStorage.getItem(key) || "[]");
-  } catch {
-    return [];
+export async function pingServer() {
+  if (!supabase) {
+    return {
+      online: false,
+      label: "Configure Supabase Keys in backend.js",
+      detail: "Add your Supabase Project URL and publishable key in backend.js so judges read/write live PostgreSQL records.",
+    };
   }
-}
 
-function writeLocal(key, rows) {
-  localStorage.setItem(key, JSON.stringify(rows));
-}
-
-export async function checkConnection() {
-  if (!supabase) return { connected: false, mode: "Local Fallback" };
   const { error } = await supabase.from("passports").select("id").limit(1);
   if (error) {
-    console.warn("Supabase check warning:", error.message);
-    return { connected: false, mode: "Local Fallback" };
+    return {
+      online: false,
+      label: "Server Sync Issue",
+      detail: `Database check returned: ${error.message}. Run supabase/schema.sql in Supabase SQL Editor.`,
+    };
   }
-  return { connected: true, mode: "Live PostgreSQL Connected" };
+
+  return {
+    online: true,
+    label: "Connected to Supabase Server",
+    detail: "",
+  };
 }
 
-export async function fetchPassports() {
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("passports")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (!error && data) {
-      writeLocal(LOCAL_PASSPORTS_KEY, data);
-      return data;
-    }
-  }
-  return readLocal(LOCAL_PASSPORTS_KEY);
+export async function listPassports() {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("passports")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return data || [];
 }
 
-export async function createPassport(record) {
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("passports")
-      .insert([record])
-      .select()
-      .single();
-    if (!error && data) return data;
-    if (error) console.error("Insert passport error:", error.message);
+export async function insertPassport(payload) {
+  if (!supabase) {
+    throw new Error("Supabase is not configured yet in backend.js.");
   }
-  const fallback = { ...record, id: crypto.randomUUID(), created_at: new Date().toISOString() };
-  const existing = readLocal(LOCAL_PASSPORTS_KEY);
-  writeLocal(LOCAL_PASSPORTS_KEY, [fallback, ...existing]);
-  return fallback;
+  const { data, error } = await supabase
+    .from("passports")
+    .insert([payload])
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
 }
 
-export async function updatePassport(id, patch) {
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("passports")
-      .update(patch)
-      .eq("id", id)
-      .select()
-      .single();
-    if (!error && data) return data;
-    if (error) console.error("Update passport error:", error.message);
+export async function patchPassport(id, updates) {
+  if (!supabase) {
+    throw new Error("Supabase is not configured yet in backend.js.");
   }
-  const updated = readLocal(LOCAL_PASSPORTS_KEY).map((p) =>
-    p.id === id ? { ...p, ...patch } : p
-  );
-  writeLocal(LOCAL_PASSPORTS_KEY, updated);
-  return updated.find((p) => p.id === id);
+  const { data, error } = await supabase
+    .from("passports")
+    .update(updates)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
 }
 
-export async function fetchFellowshipRequests() {
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("fellowship_requests")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (!error && data) {
-      writeLocal(LOCAL_REQUESTS_KEY, data);
-      return data;
-    }
-  }
-  return readLocal(LOCAL_REQUESTS_KEY);
+export async function listFellowshipRequests() {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("fellowship_requests")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return data || [];
 }
 
-export async function createFellowshipRequest(reqRecord) {
-  if (supabase) {
-    const { data, error } = await supabase
-      .from("fellowship_requests")
-      .insert([reqRecord])
-      .select()
-      .single();
-    if (!error && data) return data;
-    if (error) console.error("Insert request error:", error.message);
+export async function insertFellowshipRequest(payload) {
+  if (!supabase) {
+    throw new Error("Supabase is not configured yet in backend.js.");
   }
-  const fallback = { ...reqRecord, id: crypto.randomUUID(), created_at: new Date().toISOString() };
-  const existing = readLocal(LOCAL_REQUESTS_KEY);
-  writeLocal(LOCAL_REQUESTS_KEY, [fallback, ...existing]);
-  return fallback;
-} 
+  const { data, error } = await supabase
+    .from("fellowship_requests")
+    .insert([payload])
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
+}  
